@@ -36,9 +36,9 @@ services:
       WHATSAPP_HOOK_URL: http://host.docker.internal:5678/webhook/webhook
       WHATSAPP_DEFAULT_ENGINE: GOWS
       WHATSAPP_HOOK_EVENTS: message
-      WAHA_NO_API_KEY: true
-      WAHA_DASHBOARD_NO_PASSWORD: true
-      WHATSAPP_SWAGGER_NO_PASSWORD: true
+      WAHA_NO_API_KEY: "true"
+      WAHA_DASHBOARD_NO_PASSWORD: "true"
+      WHATSAPP_SWAGGER_NO_PASSWORD: "true"
     volumes:
       - waha_sessions:/app/.sessions
       - waha_media:/app/.media
@@ -53,7 +53,7 @@ services:
       N8N_HOST: host.docker.internal
       GENERIC_TIMEZONE: America/Sao_Paulo
       N8N_LOG_LEVEL: debug
-      N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: true
+      N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: "true"
     volumes:
       - n8n_data:/home/node/.n8n
     ports:
