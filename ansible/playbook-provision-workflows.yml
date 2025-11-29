@@ -1,0 +1,77 @@
+---
+- name: Provision n8n Workflows
+  hosts: n8n_server
+  gather_facts: no
+
+  vars:
+    n8n_api_url: "http://{{ ansible_host }}:{{ n8n_port }}/api/v1"
+    n8n_auth: "{{ n8n_user }}:{{ n8n_password }}"
+    workflows_dir: "../workflows"
+
+  tasks:
+    - name: Wait for n8n API to be available
+      uri:
+        url: "{{ n8n_api_url }}/workflows"
+        method: GET
+        user: "{{ n8n_user }}"
+        password: "{{ n8n_password }}"
+        force_basic_auth: yes
+        status_code: 200
+      register: api_check
+      until: api_check.status == 200
+      retries: 10
+      delay: 5
+      delegate_to: localhost
+
+    - name: Find all workflow JSON files
+      find:
+        paths: "{{ workflows_dir }}"
+        patterns: "*.json"
+      register: workflow_files
+      delegate_to: localhost
+
+    - name: Load workflow content
+      set_fact:
+        workflows_to_import: "{{ workflows_to_import | default([]) + [{'name': item.path | basename | regex_replace('\\.json$', ''), 'path': item.path}] }}"
+      loop: "{{ workflow_files.files }}"
+      delegate_to: localhost
+
+    - name: Import workflows to n8n
+      uri:
+        url: "{{ n8n_api_url }}/workflows"
+        method: POST
+        user: "{{ n8n_user }}"
+        password: "{{ n8n_password }}"
+        force_basic_auth: yes
+        body: "{{ lookup('file', item.path) }}"
+        body_format: json
+        status_code: [200, 201]
+        headers:
+          Content-Type: "application/json"
+      loop: "{{ workflows_to_import }}"
+      register: import_results
+      delegate_to: localhost
+      when: workflows_to_import is defined
+
+    - name: Display imported workflows
+      debug:
+        msg: "Successfully imported {{ workflows_to_import | length }} workflow(s)"
+      when: workflows_to_import is defined
+
+    - name: List all workflows in n8n
+      uri:
+        url: "{{ n8n_api_url }}/workflows"
+        method: GET
+        user: "{{ n8n_user }}"
+        password: "{{ n8n_password }}"
+        force_basic_auth: yes
+        status_code: 200
+      register: all_workflows
+      delegate_to: localhost
+
+    - name: Display workflow summary
+      debug:
+        msg:
+          - "Total workflows in n8n: {{ all_workflows.json.data | length }}"
+          - "Workflows:"
+          - "{{ all_workflows.json.data | map(attribute='name') | list }}"

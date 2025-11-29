@@ -1,0 +1,76 @@
+{
+  "name": "WhatsApp Gateway - receive & send",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wpp-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Normalize incoming payload. Expect either { phone, message } or WPPConnect-like body.\nconst body = items[0].json;\nlet phone = body.phone || body?.from || body?.sender || body?.chatId || (body?.body && body.body.chatId);\nlet message = body.message || body?.text || body?.body?.message || body?.body || JSON.stringify(body);\nreturn [{ json: { phone, message } }];"
+      },
+      "name": "Prepare Payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://62.169.17.216:21465/api/nova1/send-message",
+        "jsonParameters": false,
+        "options": {},
+        "headerParameters": [
+          {
+            "name": "Authorization",
+            "value": "= 'Bearer ' + $env.WPP_TOKEN"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": "={ \"phone\": $json.phone, \"isGroup\": false, \"isNewsletter\": false, \"isLid\": false, \"message\": $json.message }",
+        "responseFormat": "json"
+      },
+      "name": "Send Message (WPPConnect)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Payload": {
+      "main": [
+        [
+          {
+            "node": "Send Message (WPPConnect)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

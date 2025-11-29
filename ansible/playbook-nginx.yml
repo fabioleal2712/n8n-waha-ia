@@ -1,0 +1,37 @@
+---
+- name: Configure Nginx for n8n
+  hosts: n8n_server
+  become: yes
+  
+  tasks:
+    - name: Copy Nginx configuration
+      copy:
+        src: n8n.conf
+        dest: /etc/nginx/sites-available/n8n.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable Nginx site
+      file:
+        src: /etc/nginx/sites-available/n8n.conf
+        dest: /etc/nginx/sites-enabled/n8n.conf
+        state: link
+      notify: Reload Nginx
+
+    - name: Check if certificate already exists
+      stat:
+        path: /etc/letsencrypt/live/n8n.fabioleal.com.br/fullchain.pem
+      register: cert_exists
+
+    - name: Obtain SSL certificate
+      command: >
+        certbot --nginx -d n8n.fabioleal.com.br --non-interactive --agree-tos -m fabioleal@fabioleal.com.br --redirect
+      when: not cert_exists.stat.exists
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded

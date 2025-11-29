@@ -1,0 +1,125 @@
+---
+- name: Deploy n8n with Docker Compose
+  hosts: n8n_server
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages including Docker Python libraries
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - python3-docker
+          - python3-requests
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Install Docker if not present
+      block:
+        - name: Add Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+
+        - name: Add Docker repository
+          apt_repository:
+            repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+            state: present
+
+        - name: Install Docker
+          apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+            state: present
+            update_cache: yes
+      when: docker_installed.rc != 0 and ansible_os_family == "Debian"
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create n8n installation directory
+      file:
+        path: "{{ n8n_install_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: yes
+
+    - name: Copy docker-compose.yml to server
+      copy:
+        src: ../docker-compose.yml
+        dest: "{{ n8n_install_dir }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Copy .env.example to server
+      copy:
+        src: ../.env.example
+        dest: "{{ n8n_install_dir }}/.env.example"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Stop existing n8n containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ n8n_install_dir }}"
+        state: absent
+      ignore_errors: yes
+      become: no
+
+    - name: Start n8n with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ n8n_install_dir }}"
+        state: present
+        pull: always
+      become: no
+      register: docker_compose_output
+
+    - name: Wait for n8n to be healthy
+      uri:
+        url: "http://localhost:{{ n8n_port }}/healthz"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 10
+
+    - name: Display n8n access information
+      debug:
+        msg:
+          - "n8n has been successfully deployed!"
+          - "Access URL: http://{{ ansible_host }}:{{ n8n_port }}"
+          - "Username: {{ n8n_user }}"
+          - "Password: {{ n8n_password }}"
+          - ""
+          - "IMPORTANT: Change the default password after first login!"

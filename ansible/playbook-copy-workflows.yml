@@ -1,0 +1,52 @@
+---
+- name: Copy n8n Workflows to Server
+  hosts: n8n_server
+  gather_facts: no
+
+  vars:
+    n8n_workflows_dir: "{{ n8n_install_dir }}/workflows"
+    local_workflows_dir: "../workflows"
+
+  tasks:
+    - name: Create workflows directory on server
+      file:
+        path: "{{ n8n_workflows_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: yes
+
+    - name: Find all workflow JSON files locally
+      find:
+        paths: "{{ local_workflows_dir }}"
+        patterns: "*.json"
+      register: workflow_files
+      delegate_to: localhost
+
+    - name: Copy workflow files to server
+      copy:
+        src: "{{ item.path }}"
+        dest: "{{ n8n_workflows_dir }}/{{ item.path | basename }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+      loop: "{{ workflow_files.files }}"
+      when: workflow_files.files | length > 0
+
+    - name: Display import instructions
+      debug:
+        msg:
+          - "Workflows copiados para: {{ n8n_workflows_dir }}"
+          - ""
+          - "Para importar os workflows no n8n:"
+          - "1. Acesse: http://{{ ansible_host }}:{{ n8n_port }}"
+          - "2. Faça login com: admin / admin123"
+          - "3. Clique em 'Workflows' > 'Import from File'"
+          - "4. Ou use a CLI do n8n no container:"
+          - "   ssh -i ~/key_client/keybinario {{ ansible_user }}@{{ ansible_host }}"
+          - "   cd {{ n8n_install_dir }}"
+          - "   docker-compose exec n8n n8n import:workflow --input={{ n8n_workflows_dir }}/example-webhook.json"
+          - ""
+          - "Workflows disponíveis:"
+          - "{{ workflow_files.files | map(attribute='path') | map('basename') | list }}"

@@ -1,0 +1,8 @@
+*.env
+.env.local
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+wpp-alert-prometheus/

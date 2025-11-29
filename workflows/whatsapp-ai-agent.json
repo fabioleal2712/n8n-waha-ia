@@ -1,0 +1,177 @@
+{
+    "name": "WhatsApp AI Agent (WAHA)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-agent",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "id": "webhook-whatsapp",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "whatsapp-agent"
+        },
+        {
+            "parameters": {
+                "text": "={{ $json.payload?.body || $json.body?.body || $json.body?.message }}",
+                "options": {
+                    "systemMessage": "Você é um assistente DevOps especializado em AWS. \n\nSua função é ajudar o usuário com dúvidas sobre custos e infraestrutura.\n\nVocê tem acesso a ferramentas para consultar custos da AWS. Use-as sempre que o usuário perguntar sobre valores, gastos ou faturas.\n\nResponda de forma amigável, usando emojis e formatação clara para WhatsApp (*negrito*, _itálico_)."
+                },
+                "memory": {
+                    "sessionKey": "={{ $json.payload?.from || $json.body?.sender || $json.body?.from }}"
+                }
+            },
+            "id": "ai-agent",
+            "name": "DevOps AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "modelName": "gemini-1.5-flash",
+                "options": {
+                    "temperature": 0.3
+                }
+            },
+            "id": "gemini-model",
+            "name": "Google Gemini Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                400,
+                500
+            ],
+            "credentials": {
+                "googleGeminiOAuth2Api": {
+                    "id": "AIzaSyCvwXgqXOrOdy8dsBXwerPRMOajKlgff-Y",
+                    "name": "Google Gemini Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "contextWindowLength": 10
+            },
+            "id": "memory",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1,
+            "position": [
+                550,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_explorer",
+                "description": "Consulta os custos da AWS. Use esta ferramenta quando o usuário perguntar sobre gastos, custos ou faturas.",
+                "workflowId": "fXoUHGK5XiXQh0q6"
+            },
+            "id": "tool-aws",
+            "name": "AWS Cost Tool",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1,
+            "position": [
+                700,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ {\n  \"session\": \"default\",\n  \"chatId\": $json.payload?.from || $json.body?.sender || $json.body?.from,\n  \"text\": $json.output\n} }}",
+                "options": {}
+            },
+            "id": "send-whatsapp",
+            "name": "Send WhatsApp (WAHA)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost Tool": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "DevOps AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp (API)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {}
+}

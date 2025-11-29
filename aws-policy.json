@@ -1,0 +1,19 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "N8NCostExplorerAccess",
+            "Effect": "Allow",
+            "Action": [
+                "ce:GetCostAndUsage",
+                "ce:GetCostForecast",
+                "ce:GetDimensionValues",
+                "ce:GetReservationUtilization",
+                "ce:GetReservationCoverage",
+                "ce:GetSavingsPlansUtilization",
+                "ce:GetSavingsPlansCoverage"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
