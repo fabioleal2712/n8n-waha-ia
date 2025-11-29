@@ -60,7 +60,7 @@ services:
       - "5678:5678"
 
 volumes:
-  pgdata:
-  waha_sessions:
-  waha_media:
+  pgdata1:
+  waha_sessions1:
+  waha_media1:
   n8n_data1:
