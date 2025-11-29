@@ -27,7 +27,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata1:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 
   waha:
     image: devlikeapro/waha:latest
@@ -40,8 +40,8 @@ services:
       WAHA_DASHBOARD_NO_PASSWORD: "true"
       WHATSAPP_SWAGGER_NO_PASSWORD: "true"
     volumes:
-      - waha_sessions1:/app/.sessions
-      - waha_media1:/app/.media
+      - waha_sessions:/app/.sessions
+      - waha_media:/app/.media
     ports:
       - "3000:3000"
 
@@ -55,7 +55,7 @@ services:
       N8N_LOG_LEVEL: debug
       N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: "true"
     volumes:
-      - n8n_data1:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
     ports:
       - "5678:5678"
 
@@ -63,4 +63,4 @@ volumes:
   pgdata:
   waha_sessions:
   waha_media:
-  n8n_data1:
+  n8n_data:
