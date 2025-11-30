@@ -39,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     extra_hosts:
-      - "n8n:host-gateway"
+      - "10.30.0.50:host-gateway"
 
   n8n:
     image: n8nio/n8n:latest
@@ -55,7 +55,7 @@ services:
     ports:
       - "5678:5678"
     extra_hosts:
-      - "n8n:host-gateway"
+      - "10.30.0.50:host-gateway"
 
 volumes:
   pgdata1:
