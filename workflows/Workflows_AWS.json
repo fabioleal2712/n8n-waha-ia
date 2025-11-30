@@ -120,7 +120,7 @@
         "promptType": "define",
         "text": "={{ $json.message }}",
         "options": {
-          "systemMessage": "Você é um assistente DevOps especializado em AWS. \\n\\nSua função é ajudar o usuário com dúvidas sobre custos e infraestrutura.\\n\\nVocê tem acesso a ferramentas para consultar custos da AWS. Use-as sempre que o usuário perguntar sobre valores, gastos ou faturas.\\n\\nResponda de forma amigável, usando emojis e formatação clara para WhatsApp (*negrito*, _itálico_)."
+          "systemMessage": "Você é um assistente DevOps especializado em AWS. \\\\n\\\\nSua função é ajudar o usuário com dúvidas sobre custos, infraestrutura e monitoramento.\\\\n\\\\nVocê tem acesso a ferramentas para:\\\\n- Consultar custos da AWS (Cost Explorer)\\\\n- Verificar métricas e alarmes (CloudWatch)\\\\n- Analisar logs de aplicações (CloudWatch Logs)\\\\n\\\\nUse as ferramentas sempre que o usuário perguntar sobre valores, gastos, faturas, métricas, performance ou logs.\\\\n\\\\nResponda de forma amigável, usando emojis e formatação clara para WhatsApp (*negrito*, _itálico_)."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
