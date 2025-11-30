@@ -1,0 +1,68 @@
+{
+    "name": "Tool - AWS Cost DS2",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "start",
+            "name": "Start",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_DS2} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_DS2} AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_DS2} aws ce get-cost-and-usage --time-period Start={{ $today.minus({ months: 1 }).toFormat('yyyy-MM-dd') }},End={{ $today.toFormat('yyyy-MM-dd') }} --granularity MONTHLY --metrics AmortizedCost --group-by Type=DIMENSION,Key=SERVICE --output json"
+            },
+            "id": "aws-cost",
+            "name": "AWS Cost Explorer DS2",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const output = JSON.parse($input.all()[0].json.stdout);\nconst costs = output.ResultsByTime[0].Groups;\nconst formatted = costs.map(c => `${c.Keys[0]}: $${parseFloat(c.Metrics.AmortizedCost.Amount).toFixed(2)}`).join('\\n');\n\nreturn {\n  json: {\n    result: `Custos DS2 (último mês):\\n${formatted}`\n  }\n};"
+            },
+            "id": "format-data",
+            "name": "Format Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                500,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Start": {
+            "main": [
+                [
+                    {
+                        "node": "AWS Cost Explorer DS2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost Explorer DS2": {
+            "main": [
+                [
+                    {
+                        "node": "Format Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {}
+}

@@ -1,0 +1,43 @@
+{
+    "name": "Tool - AWS Cost Klm",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "start",
+            "name": "Start",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1,
+            "position": [100, 300]
+        },
+        {
+            "parameters": {
+                "command": "=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_KLM} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_KLM} AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_KLM} aws ce get-cost-and-usage --time-period Start={{ $today.minus({ months: 1 }).toFormat('yyyy-MM-dd') }},End={{ $today.toFormat('yyyy-MM-dd') }} --granularity MONTHLY --metrics AmortizedCost --group-by Type=DIMENSION,Key=SERVICE --output json"
+            },
+            "id": "aws-cost",
+            "name": "AWS Cost Explorer Klm",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [300, 300]
+        },
+        {
+            "parameters": {
+                "jsCode": "const output = JSON.parse($input.all()[0].json.stdout);\nconst costs = output.ResultsByTime[0].Groups;\nconst formatted = costs.map(c => \`\${c.Keys[0]}: \$\${parseFloat(c.Metrics.AmortizedCost.Amount).toFixed(2)}\`).join('\\n');\n\nreturn {\n  json: {\n    result: \`Custos Klm (último mês):\\n\${formatted}\`\n  }\n};"
+            },
+            "id": "format-data",
+            "name": "Format Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [500, 300]
+        }
+    ],
+    "connections": {
+        "Start": {
+            "main": [[{"node": "AWS Cost Explorer Klm", "type": "main", "index": 0}]]
+        },
+        "AWS Cost Explorer Klm": {
+            "main": [[{"node": "Format Data", "type": "main", "index": 0}]]
+        }
+    },
+    "active": false,
+    "settings": {}
+}
