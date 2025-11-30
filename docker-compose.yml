@@ -21,7 +21,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata1:/var/lib/postgresql/data
 
   waha:
     image: devlikeapro/waha:latest
@@ -35,11 +35,11 @@ services:
       WHATSAPP_SWAGGER_NO_PASSWORD: true
     volumes:
       - waha_sessions:/app/.sessions
-      - waha_media:/app/.media
+      - waha_media1:/app/.media
     ports:
       - "3000:3000"
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "n8n:host-gateway"
 
   n8n:
     image: n8nio/n8n:latest
@@ -55,10 +55,10 @@ services:
     ports:
       - "5678:5678"
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "n8n:host-gateway"
 
 volumes:
-  pgdata:
-  waha_sessions:
-  waha_media:
-  n8n_data:
+  pgdata1:
+  waha_sessions1:
+  waha_media1:
+  n8n_data1:
