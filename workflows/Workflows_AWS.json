@@ -1,0 +1,491 @@
+{
+  "name": "Workflows_AWS",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "974f6962-9314-418f-8001-94be86097e70",
+      "name": "Webhook",
+      "webhookId": "f253c989-d9ed-4ad1-8453-451cce575c7c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "489b0f0a-e8d2-4d65-ba27-76913698395f",
+              "name": "session",
+              "value": "={{ $json.body.session }}",
+              "type": "string"
+            },
+            {
+              "id": "6748bac3-285c-4925-afbf-b11d49e87546",
+              "name": "chatid",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "14b6bd33-6cb2-40f3-a097-eccd7c1ed6c8",
+              "name": "pushName",
+              "value": "={{ $json.body.payload._data.Info.PushName }}",
+              "type": "string"
+            },
+            {
+              "id": "8abdfc4f-d571-42e4-87d9-633f4ebdfc23",
+              "name": "playload_id",
+              "value": "={{ $json.body.payload.id }}",
+              "type": "string"
+            },
+            {
+              "id": "dce358cc-239d-4a25-9f1a-b637952015f2",
+              "name": "event",
+              "value": "={{ $json.body.event }}",
+              "type": "string"
+            },
+            {
+              "id": "0c837c04-d6c5-48fa-bb15-e486c8e9a136",
+              "name": "message",
+              "value": "={{ $json.body.payload.body }}",
+              "type": "string"
+            },
+            {
+              "id": "263148f0-4743-42ae-b212-0c08ab9dad41",
+              "name": "fromMe",
+              "value": "={{ $json.body.payload.fromMe }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "a72d961b-8d97-48c3-9cb7-8409aa674fa8",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event }}",
+                    "rightValue": "message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e467f482-bb4a-44bb-a374-66703af1aef1"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3e7ed606-2813-4293-b33f-8dc76b7a8d10",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "Você é um assistente DevOps especializado em AWS. \\n\\nSua função é ajudar o usuário com dúvidas sobre custos e infraestrutura.\\n\\nVocê tem acesso a ferramentas para consultar custos da AWS. Use-as sempre que o usuário perguntar sobre valores, gastos ou faturas.\\n\\nResponda de forma amigável, usando emojis e formatação clara para WhatsApp (*negrito*, _itálico_)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "26b7a9b8-e679-417d-a7d0-cc0c9d882e31",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        496,
+        208
+      ],
+      "id": "1964e553-b29d-4395-ac05-5e26737330d8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCaCfGVfO0J9jQ6i",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Dados').item.json.chatid }}",
+        "sessionTTL": 3600,
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        240
+      ],
+      "id": "9c730a03-c2dc-40a4-ab0a-8516a684c378",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "EazdOtOAEKnsNOfy",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Seen",
+        "session": "={{ $('Dados').item.json.session }}",
+        "chatId": "={{ $('Dados').item.json.chatid }}",
+        "messageId": "={{ $('Dados').item.json.playload_id }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        976,
+        0
+      ],
+      "id": "d06c3857-fe91-455f-9e1a-71d38c1b754b",
+      "name": "Send Seen",
+      "credentials": {
+        "wahaApi": {
+          "id": "UAwHXad2UledHEnL",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "={{ $('Dados').item.json.session }}",
+        "chatId": "={{ $('Dados').item.json.chatid }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "29cf0ea3-efbd-4359-80d9-ba745383f7db",
+      "name": "Send a text message",
+      "credentials": {
+        "wahaApi": {
+          "id": "UAwHXad2UledHEnL",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "NUCllvivcfneEDr4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/NUCllvivcfneEDr4",
+          "cachedResultName": "Tool - AWS Cost"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        208
+      ],
+      "id": "21f78077-73e4-4b40-8456-270e5542e4dd",
+      "name": "Call 'Tool - AWS Cost'"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "WAHA/2025.11.3",
+            "x-webhook-request-id": "01KB9CFET95TQNGAEVNCRBHWK6",
+            "x-webhook-timestamp": "1764472896329",
+            "content-length": "2307",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "n8n:5678",
+            "connection": "keep-alive"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "id": "evt_01kb9cfet9jmw2109kfp2bn420",
+            "timestamp": 1764472896329,
+            "event": "message",
+            "session": "default",
+            "metadata": {},
+            "me": {
+              "id": "5521966781079@c.us",
+              "pushName": "Fabio Leal",
+              "lid": "146794096898141@lid",
+              "jid": "5521966781079:2@s.whatsapp.net"
+            },
+            "payload": {
+              "id": "false_5521988557377@c.us_3EB0D5A72BBDDDF52AF5B6",
+              "timestamp": 1764472896,
+              "from": "5521988557377@c.us",
+              "fromMe": false,
+              "source": "app",
+              "body": "olá",
+              "to": null,
+              "participant": null,
+              "hasMedia": false,
+              "media": null,
+              "ack": 2,
+              "location": null,
+              "vCards": null,
+              "ackName": "DEVICE",
+              "replyTo": null,
+              "_data": {
+                "Info": {
+                  "Chat": "5521988557377@s.whatsapp.net",
+                  "Sender": "5521988557377:11@s.whatsapp.net",
+                  "IsFromMe": false,
+                  "IsGroup": false,
+                  "AddressingMode": "",
+                  "SenderAlt": "49877539152026:11@lid",
+                  "RecipientAlt": "",
+                  "BroadcastListOwner": "",
+                  "BroadcastRecipients": null,
+                  "ID": "3EB0D5A72BBDDDF52AF5B6",
+                  "ServerID": 0,
+                  "Type": "text",
+                  "PushName": "Fabio Leal",
+                  "Timestamp": "2025-11-30T03:21:36Z",
+                  "Category": "",
+                  "Multicast": false,
+                  "MediaType": "",
+                  "Edit": "",
+                  "MsgBotInfo": {
+                    "EditType": "",
+                    "EditTargetID": "",
+                    "EditSenderTimestampMS": "0001-01-01T00:00:00Z"
+                  },
+                  "MsgMetaInfo": {
+                    "TargetID": "",
+                    "TargetSender": "",
+                    "TargetChat": "",
+                    "DeprecatedLIDSession": null,
+                    "ThreadMessageID": "",
+                    "ThreadMessageSenderJID": ""
+                  },
+                  "VerifiedName": null,
+                  "DeviceSentMeta": null
+                },
+                "Message": {
+                  "conversation": "olá",
+                  "messageContextInfo": {
+                    "deviceListMetadata": {
+                      "senderKeyHash": "xHuRYqXs9Q0fLw==",
+                      "senderTimestamp": 1763593599,
+                      "senderAccountType": 0,
+                      "receiverAccountType": 0,
+                      "recipientKeyHash": "N3MqA8o7DHh+pw==",
+                      "recipientTimestamp": 1764467358
+                    },
+                    "deviceListMetadataVersion": 2,
+                    "messageSecret": "uqJsf0B/UZPYvhmj3DgKAh0RsSxQ3vnawLfG7+W4Mso="
+                  }
+                },
+                "IsEphemeral": false,
+                "IsViewOnce": false,
+                "IsViewOnceV2": false,
+                "IsViewOnceV2Extension": false,
+                "IsDocumentWithCaption": false,
+                "IsLottieSticker": false,
+                "IsBotInvoke": false,
+                "IsEdit": false,
+                "SourceWebMsg": null,
+                "UnavailableRequestID": "",
+                "RetryCount": 0,
+                "NewsletterMeta": null,
+                "RawMessage": {
+                  "conversation": "olá",
+                  "messageContextInfo": {
+                    "deviceListMetadata": {
+                      "senderKeyHash": "xHuRYqXs9Q0fLw==",
+                      "senderTimestamp": 1763593599,
+                      "senderAccountType": 0,
+                      "receiverAccountType": 0,
+                      "recipientKeyHash": "N3MqA8o7DHh+pw==",
+                      "recipientTimestamp": 1764467358
+                    },
+                    "deviceListMetadataVersion": 2,
+                    "messageSecret": "uqJsf0B/UZPYvhmj3DgKAh0RsSxQ3vnawLfG7+W4Mso="
+                  }
+                },
+                "Status": 3
+              }
+            },
+            "environment": {
+              "version": "2025.11.3",
+              "engine": "GOWS",
+              "tier": "CORE",
+              "browser": null
+            }
+          },
+          "webhookUrl": "http://62.169.17.216:5678/webhook-test/webhook",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Seen": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Tool - AWS Cost'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c05e11e7-cf5e-4b88-ab7a-9a1146f654b0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "20875c1e26642b85fcc95d9dc1fdb1cd590b76711b70d93dd763dc1a914e5d50"
+  },
+  "id": "TcYcfZ6ic85EicoG",
+  "tags": []
+}
