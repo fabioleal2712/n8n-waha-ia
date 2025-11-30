@@ -42,7 +42,10 @@ services:
       - "62.169.17.216:host-gateway"
 
   n8n:
-    image: n8nio/n8n:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # image: n8nio/n8n:latest
     platform: linux/amd64
     environment:
       WEBHOOK_URL: http://62.169.17.216:5678
