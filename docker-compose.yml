@@ -34,7 +34,7 @@ services:
       WAHA_DASHBOARD_NO_PASSWORD: "true"
       WHATSAPP_SWAGGER_NO_PASSWORD: "true"
     volumes:
-      - waha_sessions:/app/.sessions
+      - waha_sessions1:/app/.sessions
       - waha_media1:/app/.media
     ports:
       - "3000:3000"
@@ -51,7 +51,7 @@ services:
       N8N_LOG_LEVEL: debug
       N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: "true"
     volumes:
-      - n8n_data:/home/node/.n8n
+      - n8n_data1:/home/node/.n8n
     ports:
       - "5678:5678"
     extra_hosts:
