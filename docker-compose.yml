@@ -12,7 +12,7 @@ services:
       - "6379:6379"
 
   postgres:
-    image: postgres:latest
+    image: postgres:15-alpine
     platform: linux/amd64
     environment:
       POSTGRES_USER: default
