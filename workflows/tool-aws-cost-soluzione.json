@@ -1,43 +1,77 @@
 {
-    "name": "Tool - AWS Cost Soluzione",
-    "nodes": [
-        {
-            "parameters": {},
-            "id": "start",
-            "name": "Start",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "typeVersion": 1,
-            "position": [100, 300]
-        },
-        {
-            "parameters": {
-                "command": "=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_SOLUZIONE} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_SOLUZIONE} AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_SOLUZIONE} aws ce get-cost-and-usage --time-period Start={{ $today.minus({ months: 1 }).toFormat('yyyy-MM-dd') }},End={{ $today.toFormat('yyyy-MM-dd') }} --granularity MONTHLY --metrics AmortizedCost --group-by Type=DIMENSION,Key=SERVICE --output json"
-            },
-            "id": "aws-cost",
-            "name": "AWS Cost Explorer Soluzione",
-            "type": "n8n-nodes-base.executeCommand",
-            "typeVersion": 1,
-            "position": [300, 300]
-        },
-        {
-            "parameters": {
-                "jsCode": "const output = JSON.parse($input.all()[0].json.stdout);\nconst costs = output.ResultsByTime[0].Groups;\nconst formatted = costs.map(c => \`\${c.Keys[0]}: \$\${parseFloat(c.Metrics.AmortizedCost.Amount).toFixed(2)}\`).join('\\n');\n\nreturn {\n  json: {\n    result: \`Custos Soluzione (último mês):\\n\${formatted}\`\n  }\n};"
-            },
-            "id": "format-data",
-            "name": "Format Data",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 1,
-            "position": [500, 300]
-        }
-    ],
-    "connections": {
-        "Start": {
-            "main": [[{"node": "AWS Cost Explorer Soluzione", "type": "main", "index": 0}]]
-        },
-        "AWS Cost Explorer Soluzione": {
-            "main": [[{"node": "Format Data", "type": "main", "index": 0}]]
-        }
+  "name": "Tool - AWS Cost Soluzione",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f55ba0e4-f361-4bd8-976c-0c22c1c9cd36",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        352,
+        304
+      ]
     },
-    "active": false,
-    "settings": {}
+    {
+      "parameters": {
+        "command": "=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_SOLUZIONE} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_SOLUZIONE} AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_SOLUZIONE} aws ce get-cost-and-usage --time-period Start={{ $today.minus({ months: 5 }).toFormat('yyyy-MM-dd') }},End={{ $today.toFormat('yyyy-MM-dd') }} --granularity MONTHLY --metrics AmortizedCost --Filter '{\"Dimensions\":{\"Key\":\"SERVICE\",\"Values\":[\"AmazonCloudWatch\"]}}' --output json"
+      },
+      "id": "2d98a419-aac6-437b-bc0b-fa5cd8f41696",
+      "name": "AWS Cost Explorer",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        560,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = JSON.parse($input.all()[0].json.stdout);\nconst periods = output.ResultsByTime || [];\nconst lines = periods.map((p) => {\n  const month = (p.TimePeriod?.Start || '').slice(0, 7) || 'unknown';\n  const amount = parseFloat(p.Total?.AmortizedCost?.Amount || 0);\n  return `${month}: $${amount.toFixed(2)}`;\n});\nconst total = periods.reduce((acc, p) => acc + parseFloat(p.Total?.AmortizedCost?.Amount || 0), 0);\nreturn { json: { result: `CloudWatch (últimos 5 meses)\\n${lines.join('\\n')}\\nTotal: $${total.toFixed(2)}` } };"
+      },
+      "id": "38870db7-851f-470d-84c2-c5076efe8ed8",
+      "name": "Format Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        752,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "AWS Cost Explorer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Cost Explorer": {
+      "main": [
+        [
+          {
+            "node": "Format Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5ca3f8c3-49b0-4ef7-ba29-807d49220f12",
+  "meta": {
+    "instanceId": "20875c1e26642b85fcc95d9dc1fdb1cd590b76711b70d93dd763dc1a914e5d50"
+  },
+  "id": "dqYz5TO8LsASwzC0",
+  "tags": []
 }

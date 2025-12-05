@@ -1,0 +1,441 @@
+{
+    "name": "WhatsApp AI Agent (Meta API)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-meta",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Meta",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1.1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "whatsapp-meta"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.query['hub.mode'] }}",
+                            "operation": "equals",
+                            "value2": "subscribe"
+                        }
+                    ]
+                }
+            },
+            "id": "is-verification",
+            "name": "Is Verification?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $json.query['hub.challenge'] }}"
+            },
+            "id": "verify-webhook",
+            "name": "Verify Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                500,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract message data from Meta webhook\nconst body = $input.item.json.body;\n\nif (!body.entry || !body.entry[0].changes || !body.entry[0].changes[0].value.messages) {\n  return { json: { skip: true } };\n}\n\nconst message = body.entry[0].changes[0].value.messages[0];\nconst from = message.from;\nconst text = message.text?.body || '';\nconst messageId = message.id;\n\nreturn {\n  json: {\n    from: from,\n    text: text,\n    messageId: messageId,\n    timestamp: message.timestamp\n  }\n};"
+            },
+            "id": "parse-message",
+            "name": "Parse Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                500,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.skip }}",
+                            "operation": "notEqual",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "has-message",
+            "name": "Has Message?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                700,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "text": "={{ $json.text }}",
+                "options": {
+                    "systemMessage": "Você é um assistente DevOps especializado em AWS.\n\nSua função é ajudar o usuário com dúvidas sobre custos e infraestrutura AWS.\n\nVocê tem acesso a ferramentas para consultar custos da AWS de múltiplas contas:\n- aciol\n- ds2\n- fabiana\n- klm\n- soluzione\n\nQuando o usuário perguntar sobre custos, use a ferramenta apropriada.\n\nResponda de forma amigável e profissional, usando emojis quando apropriado.\n\nFormate suas respostas para WhatsApp:\n- Use *negrito* para destacar\n- Use _itálico_ para ênfase\n- Use quebras de linha para clareza\n- Seja conciso mas completo"
+                },
+                "memory": {
+                    "sessionKey": "={{ $json.from }}"
+                }
+            },
+            "id": "ai-agent",
+            "name": "DevOps AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1.6,
+            "position": [
+                900,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "modelName": "gemini-1.5-flash",
+                "options": {
+                    "temperature": 0.3,
+                    "maxOutputTokens": 1024
+                }
+            },
+            "id": "gemini-model",
+            "name": "Google Gemini",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                900,
+                600
+            ],
+            "credentials": {
+                "googleGeminiOAuth2Api": {
+                    "id": "CONFIGURE_GEMINI_CREDENTIALS",
+                    "name": "Google Gemini Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "contextWindowLength": 10
+            },
+            "id": "memory",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1.2,
+            "position": [
+                1050,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_aciol",
+                "description": "Consulta custos da AWS da conta ACIOL. Use quando o usuário perguntar sobre gastos da conta aciol.",
+                "workflowId": "CONFIGURE_AWS_COST_ACIOL_WORKFLOW_ID"
+            },
+            "id": "tool-aws-aciol",
+            "name": "AWS Cost - Aciol",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1.1,
+            "position": [
+                1200,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_ds2",
+                "description": "Consulta custos da AWS da conta DS2. Use quando o usuário perguntar sobre gastos da conta ds2.",
+                "workflowId": "CONFIGURE_AWS_COST_DS2_WORKFLOW_ID"
+            },
+            "id": "tool-aws-ds2",
+            "name": "AWS Cost - DS2",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1.1,
+            "position": [
+                1200,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_fabiana",
+                "description": "Consulta custos da AWS da conta Fabiana. Use quando o usuário perguntar sobre gastos da conta fabiana.",
+                "workflowId": "CONFIGURE_AWS_COST_FABIANA_WORKFLOW_ID"
+            },
+            "id": "tool-aws-fabiana",
+            "name": "AWS Cost - Fabiana",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1.1,
+            "position": [
+                1200,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_klm",
+                "description": "Consulta custos da AWS da conta KLM. Use quando o usuário perguntar sobre gastos da conta klm.",
+                "workflowId": "CONFIGURE_AWS_COST_KLM_WORKFLOW_ID"
+            },
+            "id": "tool-aws-klm",
+            "name": "AWS Cost - KLM",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1.1,
+            "position": [
+                1350,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "name": "aws_cost_soluzione",
+                "description": "Consulta custos da AWS da conta Soluzione. Use quando o usuário perguntar sobre gastos da conta soluzione.",
+                "workflowId": "CONFIGURE_AWS_COST_SOLUZIONE_WORKFLOW_ID"
+            },
+            "id": "tool-aws-soluzione",
+            "name": "AWS Cost - Soluzione",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 1.1,
+            "position": [
+                1350,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/{{ $env.WHATSAPP_API_VERSION || 'v21.0' }}/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "metaApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"{{ $('Parse Message').item.json.from }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"preview_url\": false,\n    \"body\": \"{{ $('DevOps AI Agent').item.json.output }}\"\n  }\n}",
+                "options": {}
+            },
+            "id": "send-whatsapp",
+            "name": "Send WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1100,
+                400
+            ],
+            "credentials": {
+                "metaApi": {
+                    "id": "CONFIGURE_META_API_CREDENTIALS",
+                    "name": "Meta API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "OK"
+            },
+            "id": "respond-ok",
+            "name": "Respond OK",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1300,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "OK"
+            },
+            "id": "respond-skip",
+            "name": "Respond Skip",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                900,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Meta": {
+            "main": [
+                [
+                    {
+                        "node": "Is Verification?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Verification?": {
+            "main": [
+                [
+                    {
+                        "node": "Verify Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Parse Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Message": {
+            "main": [
+                [
+                    {
+                        "node": "Has Message?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Message?": {
+            "main": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Skip",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "DevOps AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost - Aciol": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost - DS2": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost - Fabiana": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost - KLM": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Cost - Soluzione": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "DevOps AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "meta": {
+        "instanceId": "n8n-meta-whatsapp-integration"
+    }
+}

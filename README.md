@@ -143,12 +143,42 @@ Depois acesse: **http://localhost:5678**
 └── README.md
 ```
 
-## 📱 WhatsApp com WAHA
+## 📱 WhatsApp Integration
 
-Este projeto usa **WAHA** (WhatsApp HTTP API) - uma solução gratuita e open-source.
+Este projeto suporta **duas formas** de integração WhatsApp:
 
-### Quick Start WAHA
+### 🌟 WhatsApp Business Cloud API (Meta) - **RECOMENDADO**
 
+API oficial da Meta/Facebook - mais estável e confiável.
+
+**Vantagens:**
+- ✅ **Oficial**: API da Meta/Facebook
+- ✅ **Estável**: Menor risco de banimento
+- ✅ **Gratuito**: 1000 conversas/mês grátis
+- ✅ **Recursos Avançados**: Templates, botões, mídia rica
+
+**Quick Start:**
+```bash
+# 1. Configure credenciais Meta (veja guia)
+# 2. Importe workflow Meta API
+# 3. Configure webhook na Meta Console
+# 4. Teste!
+```
+
+📖 **Guias:**
+- 🚀 [META_API_QUICKSTART.md](META_API_QUICKSTART.md) - Start rápido (30 min)
+- 📖 [META_API_SETUP.md](META_API_SETUP.md) - Setup completo
+- 📋 [META_API_MIGRATION_PLAN.md](META_API_MIGRATION_PLAN.md) - Plano de migração
+
+**Workflow:** `workflows/whatsapp-ai-agent-meta.json`
+
+---
+
+### 📦 WAHA (WhatsApp HTTP API) - Legacy
+
+Solução não-oficial, gratuita e open-source.
+
+**Quick Start WAHA:**
 ```bash
 # Iniciar WAHA
 docker-compose up -d waha
@@ -161,7 +191,17 @@ docker-compose up -d waha
 ./waha-manage.sh status
 ```
 
-📖 **Guia completo**: Veja [WAHA_QUICKSTART.md](WAHA_QUICKSTART.md)
+📖 **Guia completo**: [WAHA_QUICKSTART.md](WAHA_QUICKSTART.md)
+
+**Workflow:** `workflows/whatsapp-ai-agent-native.json`
+
+---
+
+### 🔄 Migração WAHA → Meta API
+
+Se você está usando WAHA e quer migrar para Meta API:
+
+📖 **Guia de Migração**: [WHATSAPP_META_API_MIGRATION.md](WHATSAPP_META_API_MIGRATION.md)
 
 
 ## 🔧 Configuração

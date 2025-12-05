@@ -1,0 +1,215 @@
+{
+  "name": "Email AI Agent (Gemini)",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bc0ee5bf-c12d-4fc7-9b33-a791ecf40536",
+      "name": "Receber Email",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -48
+      ],
+      "credentials": {
+        "imap": {
+          "id": "sG2l6DVtelsYN1cL",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $json.from || ''; const subject = $json.subject || ''; const text = $json.text || $json.textPlain || ''; return { json: { from, subject, text } };"
+      },
+      "id": "6776c546-9770-41ff-a75a-c591c2165f0f",
+      "name": "Parse Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ [ $('Parse Email').item.json.subject || '', $('Parse Email').item.json.text || '' ].join(' ') }}",
+        "options": {
+          "systemMessage": "Você é um assistente DevOps especializado em AWS.\\n\\nSua função é ajudar o usuário com dúvidas sobre custos e infraestrutura AWS.\\n\\nVocê tem acesso a ferramentas para consultar custos da AWS de múltiplas contas:\\n- aciol\\n- ds2\\n- fabiana\\n- klm\\n- soluzione\\n\\nQuando o usuário perguntar sobre custos, use a ferramenta apropriada.\\n\\nResponda de forma amigável e profissional. Formate respostas para e-mail de forma clara e concisa."
+        }
+      },
+      "id": "184fa2c2-427c-46cb-bf81-517fe79ea463",
+      "name": "DevOps AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        656,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "maxOutputTokens": 1024,
+          "temperature": 0.3
+        }
+      },
+      "id": "6ee52be4-8f1d-40d9-af72-c506628e92c5",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        512,
+        320
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCaCfGVfO0J9jQ6i",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "agent.n8n@binariosolucoes.com.br",
+        "toEmail": "={{ $('Parse Email').item.json.from }}",
+        "subject": "={{ 'Re: ' + ($('Parse Email').item.json.subject || 'Resposta do agente DevOps') }}",
+        "text": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "2a8ca456-8770-43cc-b05d-d40d89b04315",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        -48
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "Q7y9fNGynajyJnBJ",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parse Email').item.json.from }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        304
+      ],
+      "id": "be0d5394-9f00-4af7-a920-4eb1af972228",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "EazdOtOAEKnsNOfy",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "aws_cost_soluzione",
+        "description": "CloudWatch da conta Soluzione: custos dos últimos 5 meses (AmazonCloudWatch). Use quando pedirem consumo CloudWatch ou custos Soluzione.",
+        "workflowId": "dqYz5TO8LsASwzC0"
+      },
+      "id": "5a1134f1-4609-4233-82b8-292029565651",
+      "name": "AWS Cost - Soluzione",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        944,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receber Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Email": {
+      "main": [
+        [
+          {
+            "node": "DevOps AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DevOps AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "DevOps AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "DevOps AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Cost - Soluzione": {
+      "ai_tool": [
+        [
+          {
+            "node": "DevOps AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f6d41d39-0f5a-4b75-ac1f-d1e66e926d9a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "20875c1e26642b85fcc95d9dc1fdb1cd590b76711b70d93dd763dc1a914e5d50"
+  },
+  "id": "QjDqhoKkA6j6Jd5f",
+  "tags": []
+}
